@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>Lingo — แปลภาษาด้วย Gemini AI</title>
+
+  <style>
+    :root {
+      --bg: #090e1a;
+      --surface: #121a2a;
+      --surface-soft: #172237;
+      --output-bg: #101827;
+      --text: #edf3ff;
+      --muted: #9aaac2;
+      --line: rgba(160, 180, 220, .15);
+      --accent: #68e5cd;
+      --accent-ink: #062c25;
+      --purple: #aa9aff;
+      --danger: #ff9baf;
+      --success: #68e5cd;
+      --shadow: 0 28px 90px rgba(0, 0, 0, .28);
+    }
+
+    :root[data-theme="light"] {
+      --bg: #f1f5fb;
+      --surface: #ffffff;
+      --surface-soft: #edf2fa;
+      --output-bg: #f8faff;
+      --text: #172338;
+      --muted: #62728a;
+      --line: rgba(30, 60, 100, .12);
+      --accent: #087f70;
+      --accent-ink: #ffffff;
+      --purple: #7154d8;
+      --danger: #c02c4e;
+      --success: #087f70;
+      --shadow: 0 24px 70px rgba(40, 66, 112, .09);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", "Leelawadee UI", Tahoma, sans-serif;
+      transition: background .2s, color .2s;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: .11;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    body::before {
+      top: -220px;
+      right: -100px;
+      background: #65e6ce;
+    }
+
+    body::after {
+      bottom: -260px;
+      left: -120px;
+      background: #9377ff;
+    }
+
+    button, select, textarea, input { font: inherit; }
+    button, select { -webkit-tap-highlight-color: transparent; }
+
+    button {
+      cursor: pointer;
+      transition: transform .18s, background .18s, opacity .18s;
+    }
+
+    button:not(:disabled):active { transform: scale(.97); }
+
+    button:disabled {
+      opacity: .42;
+      cursor: not-allowed;
+    }
+
+    button:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    input:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .app {
+      width: min(1080px, calc(100% - 40px));
+      margin: auto;
+      padding: 30px 0 26px;
+    }
+
+    .topbar,
+    .brand,
+    .editor-head,
+    .editor-foot,
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .brand {
+      justify-content: flex-start;
+      gap: 12px;
+      font-size: 23px;
+      font-weight: 800;
+      letter-spacing: -.8px;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 43px;
+      height: 43px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #68e5cd, #a99aff);
+      color: #0b1730;
+      font-size: 26px;
+      box-shadow: 0 8px 24px rgba(104, 229, 205, .14);
+    }
+
+    .brand small {
+      display: block;
+      margin-top: 1px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+    }
+
+    .quiet-btn {
+      min-height: 40px;
+      padding: 9px 13px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .quiet-btn:not(:disabled):hover {
+      background: var(--surface-soft);
+    }
+
+    .hero {
+      max-width: 760px;
+      margin: 40px auto 32px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--accent);
+      background: var(--surface);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    h1 {
+      margin: 18px 0 12px;
+      font-size: clamp(30px, 5vw, 49px);
+      line-height: 1.35;
+      letter-spacing: -1.5px;
+    }
+
+    h1 span { color: var(--accent); }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.8;
+    }
+
+    /* สไตล์สำหรับส่วนตั้งค่า API Key */
+    .api-panel {
+      max-width: 760px;
+      margin: 0 auto 30px;
+      padding: 18px 25px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--surface);
+      box-shadow: 0 10px 30px rgba(0,0,0,.05);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+    }
+
+    .api-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .api-label small {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: normal;
+    }
+
+    .api-controls {
+      display: flex;
+      gap: 8px;
+      flex: 1;
+      min-width: 280px;
+    }
+
+    .api-input {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface-soft);
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .api-input::placeholder {
+      color: var(--muted);
+      opacity: .6;
+    }
+
+    .workspace {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .language-bar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 46px minmax(0, 1fr);
+      align-items: center;
+      gap: 20px;
+      padding: 22px 25px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .language-field {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .language-field label {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .language-field select {
+      width: 100%;
+      min-width: 0;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface-soft);
+      color: var(--text);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .swap-btn {
+      width: 46px;
+      height: 46px;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: var(--surface-soft);
+      color: var(--accent);
+      font-size: 25px;
+    }
+
+    .swap-btn:hover { transform: rotate(180deg); }
+
+    .editor-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .editor { min-width: 0; }
+    .editor:first-child { border-right: 1px solid var(--line); }
+    .editor.output { background: var(--output-bg); }
+
+    .editor-head {
+      height: 61px;
+      padding: 16px 23px 6px;
+    }
+
+    .editor-head h2 {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .text-btn {
+      padding: 6px 9px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .text-btn:not(:disabled):hover {
+      color: var(--text);
+      background: var(--surface-soft);
+    }
+
+    .language-tag {
+      padding: 4px 9px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+
+    textarea {
+      display: block;
+      width: 100%;
+      height: 260px;
+      min-height: 180px;
+      padding: 17px 23px;
+      resize: vertical;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--text);
+      font-size: 19px;
+      line-height: 1.85;
+      overflow-wrap: anywhere;
+    }
+
+    textarea::placeholder {
+      color: var(--muted);
+      opacity: .65;
+    }
+
+    textarea:focus-visible { outline-offset: -4px; }
+
+    .editor-foot {
+      min-height: 63px;
+      padding: 10px 22px 18px;
+      flex-wrap: wrap;
+    }
+
+    .tool-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .tool-btn {
+      min-height: 35px;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .tool-btn:not(:disabled):hover {
+      color: var(--text);
+      background: var(--surface-soft);
+    }
+
+    .counter {
+      color: var(--muted);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .counter.over { color: var(--danger); }
+
+    .bottom-panel {
+      padding: 19px 23px 22px;
+      border-top: 1px solid var(--line);
+    }
+
+    .status {
+      min-height: 23px;
+      margin: 0 0 15px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .status[data-type="error"] { color: var(--danger); }
+    .status[data-type="success"] { color: var(--success); }
+
+    .actions { flex-wrap: wrap; }
+
+    .shortcut {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    kbd {
+      padding: 3px 6px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      font-family: inherit;
+    }
+
+    .translate-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-width: 168px;
+      min-height: 48px;
+      padding: 13px 24px;
+      border: 0;
+      border-radius: 14px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-weight: 800;
+      box-shadow: 0 7px 20px rgba(51, 170, 146, .12);
+    }
+
+    .translate-btn:not(:disabled):hover {
+      transform: translateY(-2px);
+    }
+
+    .spinner {
+      display: none;
+      width: 17px;
+      height: 17px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    .translate-btn[aria-busy="true"] .spinner {
+      display: inline-block;
+    }
+
+    .privacy {
+      max-width: 780px;
+      margin: 18px auto 0;
+      color: var(--muted);
+      text-align: center;
+      font-size: 11px;
+      line-height: 1.9;
+    }
+
+    .footer {
+      margin-top: 25px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 10px;
+      letter-spacing: 1px;
+      opacity: .75;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 700px) {
+      .app { width: calc(100% - 24px); padding-top: 20px; }
+      .hero { margin: 25px auto; }
+      .hero p { font-size: 13px; }
+      
+      .api-panel {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .api-controls { flex-wrap: wrap; min-width: 100%; }
+
+      .workspace { border-radius: 20px; }
+      .language-bar { gap: 10px; padding: 16px; }
+      .language-field { flex-direction: column; align-items: stretch; gap: 7px; }
+      .language-field select { padding: 10px 7px; font-size: 13px; }
+      .swap-btn { margin-top: 23px; }
+      
+      .editor-grid { grid-template-columns: 1fr; }
+      .editor:first-child { border-right: 0; border-bottom: 1px solid var(--line); }
+      textarea { height: 210px; font-size: 17px; }
+      .bottom-panel { padding: 17px; }
+      .shortcut { display: none; }
+      .translate-btn { flex: 1; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">↔</div>
+        <div>
+          Lingo
+          <small>THAI / ENGLISH (GEMINI)</small>
+        </div>
+      </div>
+
+      <button id="themeBtn" class="quiet-btn" type="button">
+        โหมดสว่าง
+      </button>
+    </header>
+
+    <section class="hero" aria-labelledby="pageTitle">
+      <div class="eyebrow">POWERED BY GEMINI 2.5 FLASH</div>
+      <h1 id="pageTitle">ทุกความหมาย <span>เข้าใจกันได้</span></h1>
+      <p>
+        แปลภาษาอย่างเป็นธรรมชาติด้วย AI
+        เพียงใส่ API Key แล้วเริ่มใช้งานได้ทันที
+      </p>
+    </section>
+
+    <!-- ส่วนจัดการ API Key ของ Gemini -->
+    <section class="api-panel" aria-label="ตั้งค่า API Key">
+      <div class="api-label">
+        <label for="geminiApiKey">Gemini API Key</label>
+        <small>คีย์จะบันทึกอยู่ในเบราว์เซอร์นี้เท่านั้น</small>
+      </div>
+      <div class="api-controls">
+        <input 
+          type="password" 
+          id="geminiApiKey" 
+          class="api-input" 
+          placeholder="ใส่ API Key ของคุณที่นี่ (AIzaSy...)" 
+          spellcheck="false" 
+          autocomplete="off"
+        >
+        <button id="toggleKeyBtn" class="quiet-btn" type="button" title="แสดง/ซ่อน Key">
+          👁️
+        </button>
+        <button id="saveKeyBtn" class="quiet-btn" type="button">
+          บันทึก
+        </button>
+      </div>
+    </section>
+
+    <section class="workspace" aria-label="เครื่องมือแปลภาษา">
+      <div class="language-bar">
+        <div class="language-field">
+          <label for="sourceLang">ภาษาต้นทาง</label>
+          <select id="sourceLang">
+            <option value="en" selected>English</option>
+            <option value="th">ภาษาไทย</option>
+          </select>
+        </div>
+
+        <button
+          id="swapBtn"
+          class="swap-btn"
+          type="button"
+          aria-label="สลับภาษาต้นทางและปลายทาง"
+          title="สลับภาษา และนำคำแปลกลับมาเป็นข้อความต้นฉบับ"
+        >⇄</button>
+
+        <div class="language-field">
+          <label for="targetLang">ภาษาปลายทาง</label>
+          <select id="targetLang">
+            <option value="th" selected>ภาษาไทย</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="editor-grid">
+        <section class="editor">
+          <div class="editor-head">
+            <h2 id="sourceHeading">ข้อความต้นฉบับ</h2>
+            <button id="clearBtn" class="text-btn" type="button">
+              ล้างข้อความ
+            </button>
+          </div>
+
+          <textarea
+            id="sourceText"
+            aria-labelledby="sourceHeading"
+            aria-describedby="charCount privacy"
+            placeholder="พิมพ์ข้อความภาษาอังกฤษที่ต้องการแปล..."
+            spellcheck="false"
+          ></textarea>
+
+          <div class="editor-foot">
+            <button
+              id="speakSourceBtn"
+              class="tool-btn"
+              type="button"
+              disabled
+            >ฟังต้นฉบับ</button>
+
+            <!-- เปลี่ยนจาก Byte เป็น นับตัวอักษรแทน เพราะ Gemini รับได้เยอะกว่า -->
+            <span id="charCount" class="counter">
+              0 / 5000 ตัวอักษร
+            </span>
+          </div>
+        </section>
+
+        <section class="editor output">
+          <div class="editor-head">
+            <h2 id="targetHeading">คำแปล</h2>
+            <span id="targetTag" class="language-tag">TH</span>
+          </div>
+
+          <textarea
+            id="targetText"
+            aria-labelledby="targetHeading"
+            placeholder="คำแปลของคุณจะแสดงที่นี่..."
+            readonly
+            spellcheck="false"
+          ></textarea>
+
+          <div class="editor-foot">
+            <div class="tool-group">
+              <button
+                id="speakTargetBtn"
+                class="tool-btn"
+                type="button"
+                disabled
+              >ฟังคำแปล</button>
+
+              <button
+                id="copyBtn"
+                class="tool-btn"
+                type="button"
+                disabled
+              >คัดลอกคำแปล</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="bottom-panel">
+        <p
+          id="status"
+          class="status"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >พร้อมใช้งาน — พิมพ์ข้อความแล้วกดแปลภาษา</p>
+
+        <div class="actions">
+          <button id="sampleBtn" class="quiet-btn" type="button">
+            ใส่ข้อความตัวอย่าง
+          </button>
+          
+          <!-- ปุ่มฟังเสียงคำแปลเพิ่มเติมตามที่ขอ -->
+          <button
+            id="readAloudBtn"
+            class="quiet-btn"
+            type="button"
+            title="อ่านคำแปลตามภาษาที่เลือก"
+            disabled
+          >
+            🔊 ฟังเสียงคำแปล
+          </button>
+
+          <span class="shortcut">
+            <kbd>Ctrl / ⌘</kbd> + <kbd>Enter</kbd>
+          </span>
+
+          <button
+            id="translateBtn"
+            class="translate-btn"
+            type="button"
+            aria-busy="false"
+            disabled
+          >
+            <span class="spinner" aria-hidden="true"></span>
+            <span id="translateLabel">แปลภาษา</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <p id="privacy" class="privacy">
+      หน้านี้ใช้บริการ API ของ <b>Google Gemini 2.5 Flash</b> โดยตรง ไม่มีการส่งข้อมูลผ่านเซิร์ฟเวอร์ตัวกลาง
+      <br>
+      จำกัด 5,000 ตัวอักษรต่อครั้ง • เสียงพูดขึ้นอยู่กับเบราว์เซอร์ของคุณ
+    </p>
+
+    <footer class="footer">
+      LINGO · POWERED BY GEMINI AI
+    </footer>
+  </main>
+
+  <script>
+    "use strict";
+
+    const $ = (id) => document.getElementById(id);
+    const MAX_CHARS = 5000;
+
+    const languages = {
+      en: {
+        locale: "en-US",
+        placeholder: "พิมพ์ข้อความภาษาอังกฤษที่ต้องการแปล...",
+        sample: "Hello! I would like to practice English every day. Can you help me?"
+      },
+      th: {
+        locale: "th-TH",
+        placeholder: "พิมพ์ข้อความภาษาไทยที่ต้องการแปล...",
+        sample: "สวัสดี ฉันอยากฝึกภาษาอังกฤษทุกวัน คุณช่วยแนะนำการเรียนให้ฉันหน่อยได้ไหม?"
+      }
+    };
+
+    let isLoading = false;
+    let activeController = null;
+    let requestVersion = 0;
+
+    // ระบบจัดการ API Key
+    function loadApiKey() {
+      const savedKey = localStorage.getItem("lingo-gemini-key") || "";
+      $("geminiApiKey").value = savedKey;
+      if (savedKey) {
+        $("geminiApiKey").type = "password";
+      }
+    }
+
+    $("saveKeyBtn").addEventListener("click", () => {
+      const key = $("geminiApiKey").value.trim();
+      if (key) {
+        localStorage.setItem("lingo-gemini-key", key);
+        $("geminiApiKey").type = "password";
+        setStatus("บันทึก API Key เรียบร้อยแล้ว", "success");
+      } else {
+        localStorage.removeItem("lingo-gemini-key");
+        setStatus("ลบ API Key ออกแล้ว", "neutral");
+      }
+    });
+
+    $("toggleKeyBtn").addEventListener("click", () => {
+      const input = $("geminiApiKey");
+      if (input.type === "password") {
+        input.type = "text";
+      } else {
+        input.type = "password";
+      }
+    });
+
+    // ฟังก์ชันช่วยแปลภาษา
+    function getInput() {
+      return $("sourceText").value.trim();
+    }
+
+    function getCharLength() {
+      return getInput().length;
+    }
+
+    function setStatus(message, type = "neutral") {
+      $("status").textContent = message;
+      $("status").dataset.type = type;
+    }
+
+    function updateUI() {
+      const input = getInput();
+      const output = $("targetText").value.trim();
+      const chars = getCharLength();
+      const overLimit = chars > MAX_CHARS;
+      const canSpeak = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+
+      $("charCount").textContent = `${chars} / ${MAX_CHARS} ตัวอักษร`;
+      $("charCount").classList.toggle("over", overLimit);
+      $("sourceText").setAttribute("aria-invalid", String(overLimit));
+
+      $("translateBtn").disabled = isLoading || !input || overLimit;
+      $("translateBtn").setAttribute("aria-busy", String(isLoading));
+      $("translateLabel").textContent = isLoading ? "กำลังแปล..." : "แปลภาษา";
+
+      $("clearBtn").disabled = !$("sourceText").value && !$("targetText").value && !isLoading;
+      $("copyBtn").disabled = !output;
+      
+      $("speakSourceBtn").disabled = !input || !canSpeak;
+      $("speakTargetBtn").disabled = !output || !canSpeak;
+      $("readAloudBtn").disabled = !output || !canSpeak;
+
+      const sourceLanguage = $("sourceLang").value;
+      const targetLanguage = $("targetLang").value;
+
+      $("sourceText").lang = sourceLanguage;
+      $("targetText").lang = targetLanguage;
+      $("sourceText").placeholder = languages[sourceLanguage].placeholder;
+      $("targetTag").textContent = targetLanguage.toUpperCase();
+    }
+
+    function invalidateTranslation() {
+      requestVersion += 1;
+      if (activeController) {
+        activeController.abort();
+        activeController = null;
+      }
+      isLoading = false;
+      $("targetText").value = "";
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+      updateUI();
+    }
+
+    function showInputStatus() {
+      if (getCharLength() > MAX_CHARS) {
+        setStatus(`ข้อความเกิน ${MAX_CHARS} ตัวอักษร กรุณาย่อข้อความก่อนแปล`, "error");
+      } else {
+        setStatus("พร้อมแปล — กดปุ่มแปลภาษา หรือ Ctrl / Cmd + Enter");
+      }
+    }
+
+    async function translateText() {
+      if (isLoading) return;
+
+      const text = getInput();
+      const apiKey = localStorage.getItem("lingo-gemini-key") || $("geminiApiKey").value.trim();
+
+      if (!apiKey) {
+        setStatus("กรุณาใส่และบันทึก Gemini API Key ก่อนใช้งาน", "error");
+        $("geminiApiKey").focus();
+        return;
+      }
+
+      if (!text) {
+        setStatus("กรุณาพิมพ์ข้อความที่ต้องการแปล", "error");
+        $("sourceText").focus();
+        return;
+      }
+
+      if (getCharLength() > MAX_CHARS) {
+        showInputStatus();
+        return;
+      }
+
+      invalidateTranslation();
+
+      const myVersion = requestVersion;
+      const controller = new AbortController();
+      activeController = controller;
+      isLoading = true;
+
+      updateUI();
+      setStatus("กำลังให้ Gemini ช่วยแปลข้อความ...");
+
+      let timedOut = false;
+      const timeout = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, 25000); // เผื่อเวลาให้ AI คิดสักนิด
+
+      try {
+        const sourceLangText = $("sourceLang").options[$("sourceLang").selectedIndex].text;
+        const targetLangText = $("targetLang").options[$("targetLang").selectedIndex].text;
+        
+        // System Prompt สำหรับสั่งงาน Gemini ให้อยู่ในกรอบการแปล
+        const promptText = `Translate the following text from ${sourceLangText} to ${targetLangText}. Provide ONLY the final translated text. Do NOT wrap in quotes, do NOT add explanations, and do NOT use markdown code blocks.\n\nText to translate:\n${text}`;
+
+        const requestBody = {
+          contents: [{ parts: [{ text: promptText }] }],
+          generationConfig: {
+            temperature: 0.1, // ค่าน้อยเพื่อให้แปลตรงไปตรงมา ไม่เสริมแต่งมากไป
+            maxOutputTokens: 2048,
+          }
+        };
+
+        // เรียกใช้ Gemini 2.5 Flash
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal
+          }
+        );
+
+        if (response.status === 400 || response.status === 403) {
+          throw new Error("API Key ไม่ถูกต้อง หรือไม่มีสิทธิ์เข้าถึง กรุณาตรวจสอบ Key");
+        }
+
+        if (!response.ok) {
+          throw new Error(`บริการ AI มีปัญหา (HTTP ${response.status})`);
+        }
+
+        const data = await response.json();
+        
+        // ดึงข้อความตอบกลับจากโครงสร้าง JSON ของ Gemini
+        const translatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!translatedText || !translatedText.trim()) {
+          throw new Error("AI ไม่สามารถแปลข้อความนี้ได้");
+        }
+
+        if (myVersion !== requestVersion) return;
+
+        $("targetText").value = translatedText.trim();
+        setStatus("แปลสำเร็จโดย Gemini AI", "success");
+        
+      } catch (error) {
+        if (myVersion !== requestVersion) return;
+
+        if (timedOut) {
+          setStatus("บริการตอบกลับช้าเกินไป กรุณาลองใหม่อีกครั้ง", "error");
+        } else if (error.name === "AbortError") {
+          setStatus("ยกเลิกการแปลแล้ว");
+        } else if (error instanceof TypeError) {
+          setStatus("เชื่อมต่อ API ไม่ได้ โปรดตรวจสอบอินเทอร์เน็ต", "error");
+        } else {
+          setStatus(error.message || "เกิดข้อผิดพลาดในการแปลภาษา", "error");
+        }
+      } finally {
+        clearTimeout(timeout);
+        if (myVersion === requestVersion) {
+          activeController = null;
+          isLoading = false;
+          updateUI();
+        }
+      }
+    }
+
+    function swapLanguages() {
+      const previousOutput = $("targetText").value;
+      const previousSourceLanguage = $("sourceLang").value;
+
+      $("sourceLang").value = $("targetLang").value;
+      $("targetLang").value = previousSourceLanguage;
+
+      if (previousOutput.trim()) {
+        $("sourceText").value = previousOutput;
+      }
+
+      invalidateTranslation();
+
+      if (getCharLength() > MAX_CHARS) {
+        showInputStatus();
+      } else {
+        setStatus("สลับภาษาแล้ว — กดแปลภาษาเพื่อแปลข้อความในทิศทางใหม่");
+      }
+      $("sourceText").focus();
+    }
+
+    async function copyTranslation() {
+      const text = $("targetText").value;
+      if (!text.trim()) return;
+
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+        await navigator.clipboard.writeText(text);
+        setStatus("คัดลอกคำแปลแล้ว", "success");
+      } catch {
+        $("targetText").focus();
+        $("targetText").select();
+        $("targetText").setSelectionRange(0, text.length);
+        setStatus("เลือกคำแปลให้แล้ว กด Ctrl / Cmd + C เพื่อคัดลอก");
+      }
+    }
+
+    function speak(text, language) {
+      if (!text.trim() || !("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) return;
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      const locale = languages[language].locale;
+      const voices = window.speechSynthesis.getVoices();
+      utterance.lang = locale;
+      utterance.rate = 0.95;
+
+      const matchingVoice = voices.find(v => v.lang.toLowerCase() === locale.toLowerCase()) || 
+                            voices.find(v => v.lang.toLowerCase().startsWith(language));
+      
+      if (matchingVoice) utterance.voice = matchingVoice;
+
+      utterance.onerror = (e) => {
+        if (["interrupted", "canceled"].includes(e.error)) return;
+        setStatus("อ่านออกเสียงไม่ได้ อุปกรณ์อาจไม่มีเสียงภาษานี้", "error");
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function applyTheme(theme) {
+      const selectedTheme = theme === "light" ? "light" : "dark";
+      document.documentElement.dataset.theme = selectedTheme;
+      document.documentElement.style.colorScheme = selectedTheme;
+      $("themeBtn").textContent = selectedTheme === "dark" ? "☀ โหมดสว่าง" : "☾ โหมดมืด";
+      try { localStorage.setItem("lingo-theme", selectedTheme); } catch {}
+    }
+
+    // Event Listeners
+    $("sourceText").addEventListener("input", () => { invalidateTranslation(); showInputStatus(); });
+    $("sourceLang").addEventListener("change", () => { $("targetLang").value = $("sourceLang").value === "en" ? "th" : "en"; invalidateTranslation(); showInputStatus(); });
+    $("targetLang").addEventListener("change", () => { $("sourceLang").value = $("targetLang").value === "en" ? "th" : "en"; invalidateTranslation(); showInputStatus(); });
+    
+    $("translateBtn").addEventListener("click", translateText);
+    $("swapBtn").addEventListener("click", swapLanguages);
+    $("copyBtn").addEventListener("click", copyTranslation);
+    
+    $("clearBtn").addEventListener("click", () => {
+      $("sourceText").value = ""; invalidateTranslation(); setStatus("ล้างข้อความแล้ว"); $("sourceText").focus();
+    });
+    
+    $("sampleBtn").addEventListener("click", () => {
+      $("sourceText").value = languages[$("sourceLang").value].sample; invalidateTranslation(); setStatus("ใส่ข้อความตัวอย่างแล้ว — กดแปลภาษา"); $("sourceText").focus();
+    });
+
+    $("speakSourceBtn").addEventListener("click", () => speak($("sourceText").value, $("sourceLang").value));
+    $("speakTargetBtn").addEventListener("click", () => speak($("targetText").value, $("targetLang").value));
+    $("readAloudBtn").addEventListener("click", () => speak($("targetText").value, $("targetLang").value)); // ปุ่มที่ขอเพิ่ม
+
+    $("themeBtn").addEventListener("click", () => {
+      applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+        event.preventDefault();
+        if (!$("translateBtn").disabled) translateText();
+      }
+    });
+
+    // เริ่มต้นระบบ
+    let initialTheme = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    try {
+      const savedTheme = localStorage.getItem("lingo-theme");
+      if (savedTheme) initialTheme = savedTheme;
+    } catch {}
+
+    loadApiKey();
+    applyTheme(initialTheme);
+    updateUI();
+
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.getVoices();
+    }
+  </script>
+</body>
+  </html>
